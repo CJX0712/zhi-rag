@@ -83,7 +83,11 @@ class DenseEmbedder:
             raise ZDError(ZDCode.E_EMBED, "sentence-transformers unavailable (optional dep)", str(e))
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
-        self.dim = self.model.get_sentence_embedding_dimension()
+        # get_sentence_embedding_dimension renamed to get_embedding_dimension in newer ST
+        try:
+            self.dim = self.model.get_embedding_dimension()
+        except AttributeError:
+            self.dim = self.model.get_sentence_embedding_dimension()
 
     def embed_documents(self, texts):
         return _normalize(self.model.encode(list(texts), normalize_embeddings=True))

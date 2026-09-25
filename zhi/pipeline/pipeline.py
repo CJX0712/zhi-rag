@@ -122,7 +122,18 @@ class ZhiPipeline:
         if kind == "lsi":
             embedder = embedder_mod.TfidfEmbedder.load(os.path.join(persist, "embedder.pkl"))
         else:
-            embedder, _ = embedder_mod.get_embedder(self.cfg)
+            # Dense index must be reloaded as the same dense embedder recorded at
+            # ingest time, regardless of cfg.embedder (which defaults to "lsi").
+            # We build it directly from the saved model name so a dense-built
+            # index can be queried after a fresh load.
+            try:
+                embedder = embedder_mod.DenseEmbedder(self.cfg.dense_model)
+            except ZDError as e:
+                raise ZDError(
+                    ZDCode.E_EMBED,
+                    "无法加载 dense 索引：需要 sentence-transformers",
+                    e.detail,
+                )
         retriever = retriever_mod.HybridRetriever(embedder=embedder, vectorstore=vs, use_dense=True)
         retriever.bm25.index(vs.chunks)
         retriever.chunks = vs.chunks

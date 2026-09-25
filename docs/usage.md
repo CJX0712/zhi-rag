@@ -28,9 +28,11 @@ print(p2.query("Transformer 的自注意力机制？").answer)
 ## 2. 命令行（`zhi`）
 
 ```bash
-# 建索引
+# 建索引（默认离线 LSI 嵌入，零下载）
 python -m zhi.api.cli ingest data --persist-dir .zhi_index
-# 提问
+# 启用真实稠密嵌入（MiniLM，需 sentence-transformers + 模型）
+python -m zhi.api.cli ingest data --embedder dense --persist-dir .zhi_dense
+# 提问（自动按持久化索引的类型加载，无需再指定 embedder）
 python -m zhi.api.cli ask "什么是 RAG？" --top-k 3
 # 仅用 BM25 检索
 python -m zhi.api.cli ask "RAG 的模块组成" --top-k 3 --mode bm25
@@ -75,6 +77,16 @@ pip install -r requirements-optional.txt
 ZhiConfig(embedder="dense", dense_model="sentence-transformers/all-MiniLM-L6-v2")
 ```
 
+真实稠密嵌入（MiniLM，384 维）需联网从 HuggingFace 拉取一次模型权重（约 80MB+）。
+环境注意：
+
+- **HF 不可达**：设 `HF_ENDPOINT` 指向可达镜像，例如
+  `export HF_ENDPOINT=https://hf-mirror.com`（国内/受限网络常用）。
+- **系统 SOCKS 代理**：若本机系统代理为 SOCKS 且 httpx 报
+  `Unknown scheme for proxy URL 'socks4://...'`，先 `export NO_PROXY=*`
+  （或安装 `httpx[socks]`）再运行，可绕过该解析错误。
+- 未安装/拉取失败时，`embedder="dense"` 自动回退 LSI，demo 不中断。
+
 ## 6. 评测
 
 - **内置（零依赖）**：`eval` 命令 / `zhi.eval.run_builtin` 给出 source 级 recall@k 与延迟统计。
@@ -83,7 +95,10 @@ ZhiConfig(embedder="dense", dense_model="sentence-transformers/all-MiniLM-L6-v2"
 ## 7. 性能基线
 
 ```bash
+python scripts/baseline.py                 # 离线 LSI 默认 + 尽力 MiniLM 对标
+export HF_ENDPOINT=https://hf-mirror.com   # 受限网络先设镜像
 python scripts/baseline.py
 ```
 
-输出离线 LSI 默认的建库吞吐、embed/检索/端到端延迟、recall@k，并尝试可选 MiniLM 稠密对标（网络可达时）。
+输出离线 LSI 默认的建库吞吐、embed/检索/端到端延迟、recall@k，并在模型可达时给出
+MiniLM 稠密对标（recall@k / 平均延迟 / p95）。本仓库已实测跑通（见验收报告）。

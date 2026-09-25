@@ -12,7 +12,9 @@
 
 ✅ **系统已交付并可一键复现运行**。零模型下载即可跑通完整 demo（离线 LSI 嵌入 + Mock 生成器默认后端），34 个单元测试全部通过，依赖版本锁定，文档覆盖架构/部署/使用，关键指标有量化基线并与对标方案对比。
 
-⚠️ **两项标注为「可选就绪 / 受限」而非缺陷**：① 真实稠密嵌入（MiniLM）因沙箱网络对 HuggingFace 返回 502 而 SKIPPED，代码与回退链就绪，联网即生效；② 真实 LLM 后端（Ollama/OpenAI）与真实视觉后端（CLIP）为可插拔 guarded import，缺依赖时自动回退离线默认实现。
+⚠️ **一项标注为「可选就绪 / 受限」而非缺陷**：真实 LLM 后端（Ollama/OpenAI）与真实视觉后端（CLIP）为可插拔 guarded import，缺依赖时自动回退离线默认实现。
+
+✅ **MiniLM 真稠密嵌入已实测启用**（本次增量）：通过 `HF_ENDPOINT=https://hf-mirror.com` 镜像拉取 `all-MiniLM-L6-v2`（384 维，约 80MB），`scripts/baseline.py` 已产出真实对标数据，CLI `ingest --embedder dense` → `ask` 跨进程整链路跑通。受限点仅为「需联网拉一次模型」与「系统 SOCKS 代理需 `NO_PROXY=*` 中和」，非代码缺陷。
 
 ---
 
@@ -28,6 +30,8 @@
 | 6 | 单一职责模块、可独立验证 | 11 个 `tests/test_*.py` 覆盖各模块 | 加载/切分/嵌入/向量库/检索/生成/管线/API/评测均有单测 | ✅ |
 | 7 | 零遗留 TODO，自主修复全部错误 | 全局 grep `TODO/FIXME` + 历史 bug 已闭环 | 无遗留 TODO；3 类历史 bug 已修复并加回归单测 | ✅ |
 | 8 | 复用优先、自研书面理由 | `zhi/retriever/rrf.py` 模块 docstring | RRF 融合为唯一书面自研理由（见 §5） | ✅ |
+| 9 | MiniLM 真稠密对标可运行 | `scripts/baseline.py` + CLI `--embedder dense` | 实测 recall@5=1.0 / 23ms；跨进程 load 跑通 | ✅ |
+| 10 | 修复 dense 索引 reload bug | `zhi/pipeline/pipeline.py:load` + `tests/test_loading_dense.py` | 已加回归测试，35 passed | ✅ |
 
 ---
 
@@ -78,6 +82,26 @@ $ python -m zhi.api.cli ask "什么是混合检索？"
 | p95 延迟 | 6.67 ms | 端到端分位 |
 | **recall@5** | **1.0** | 内置 5 QA 对全命中 |
 
+**MiniLM 真稠密对标（已实测启用，384 维）：**
+
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| recall@5 | 1.0 | 与 LSI 默认持平（小语料） |
+| 平均延迟 | 23.26 ms | transformer 编码重于 LSI |
+| p95 延迟 | 25.15 ms | 端到端分位 |
+
+### 2.3 修复：dense 索引跨进程 reload 失败
+
+- **现象**：`ingest --embedder dense` 后用**全新进程** `ask`/`load` 报
+  `ZDError [2002] TfidfEmbedder not fitted`。
+- **根因**：`ZhiPipeline.load()` 在 `kind != "lsi"` 时调用 `get_embedder(self.cfg)`，
+  而 `ask` 用默认 `cfg.embedder="lsi"` → 重建出**未拟合的 TfidfEmbedder**；
+  manifest 已记录 dense，但 load 未读它。
+- **修复**：`load()` 在 dense 分支按 manifest 强制 `DenseEmbedder(cfg.dense_model)`，
+  与入库类型一致；缺失 sentence-transformers 时给清晰错误。
+- **回归测试**：`tests/test_loading_dense.py`（guard：`sentence-transformers` 已装、
+  模型不可用时自动 skip），35 单测全过。
+
 ---
 
 ## 4. 与对标方案对比
@@ -87,7 +111,7 @@ $ python -m zhi.api.cli ask "什么是混合检索？"
 | BM25（词法） | rank_bm25 + jieba | ≥ 基准 | 精确关键词强 | 术语/专有名词明确 |
 | Dense（LSI） | TF-IDF + TruncatedSVD | ≥ 基准 | 语义泛化强 | 同义/改写查询 |
 | **Hybrid（RRF）** | BM25 + Dense 融合 | **1.0（最优）** | 兼顾词法+语义 | **默认推荐** |
-| Dense（MiniLM）*可选* | sentence-transformers | SKIPPED | 需下载 80MB+ 模型 | 联网环境 SOTA 语义 |
+| Dense（MiniLM）**已启用** | sentence-transformers | **1.0** | 23ms / 真语义向量 | 联网环境 SOTA 语义 |
 
 > RRF（Reciprocal Rank Fusion, Cormack 2009）仅依赖各路排序的**名次位置**，对分数量纲不敏感，天然适合「词法 + 稠密」异构分数融合，故 Hybrid 在召回上不劣于任一路且更稳。
 
@@ -109,7 +133,8 @@ $ python -m zhi.api.cli ask "什么是混合检索？"
 
 | 限制 | 影响 | 是否阻断 DoD |
 |------|------|--------------|
-| 真实稠密嵌入（MiniLM）沙箱网络 502，SKIPPED | 离线默认用 LSI 兜底，语义上限低于 MiniLM | 否（代码就绪，联网即生效） |
+| 真实稠密嵌入（MiniLM）需联网拉一次模型权重（约 80MB） | 离线默认用 LSI 兜底；镜像可达即启用 | 否（已实测启用） |
+| 系统 SOCKS 代理下 httpx 报 `Unknown scheme socks4://...` | 需 `export NO_PROXY=*` 或装 `httpx[socks]` 中和 | 否（环境配置，非代码） |
 | 真实 LLM（Ollama/OpenAI）需用户自备服务/密钥 | 默认走确定性 Mock 生成器，答案非「真 LLM」 | 否（可插拔，缺则回退） |
 | 图像为离线 caption 占位检索，非视觉语义检索 | 图像按文件名/尺寸/格式等元数据召回，非内容理解 | 否（CLIP 可选，guarded import） |
 | 基线语料规模小（5–6 文档） | 绝对延迟仅作相对对标，非生产容量数据 | 否（设计为可扩展，换大数据重跑 baseline 即可） |
@@ -140,7 +165,7 @@ $ python -m zhi.api.cli ask "什么是混合检索？"
 | 示例语料+测试+基线 | 5 文档 + 5 QA + 34 单测 + baseline.py | ✅ |
 | 文档 | 架构/部署/使用 + README | ✅ |
 | GitHub 建仓推送 | `CJX0712/zhi-rag` main 已推送（署名晨星） | ✅ |
-| 可选真实后端 | MiniLM / Ollama / OpenAI / CLIP | ⚠️ 受限/可选就绪（非缺陷） |
+| 可选真实后端 | MiniLM / Ollama / OpenAI / CLIP | ✅ MiniLM 已实测启用；Ollama/OpenAI/CLIP 可选就绪（非缺陷） |
 | 验收报告 | 本文件（DoD 对照/运行/性能/对标/限制/优化） | ✅ |
 
 ---
