@@ -1,16 +1,15 @@
 # ZhiDa — runtime dependencies for the offline-default demo / REST service.
-# These install with no model download (LSI embedder + Mock generator).
+# No model download required (LSI embedder + Mock generator). Text splitting is
+# built-in pure-Python, so langchain is NOT required at runtime.
 # For the optional real dense embedder (MiniLM) / CLIP, see requirements-optional.txt.
-numpy==2.5.3
-faiss-cpu==1.15.1
-scikit-learn==1.9.1
-scipy==1.18.1
-rank_bm25==0.2.2
-jieba==0.42.1
-fastapi==0.141.1
-uvicorn==0.54.0
-typer==0.27.2
-pypdf==6.19.0
-langchain-text-splitters==1.1.2
-langchain-core==1.6.5
-pyyaml==6.0.3
+numpy>=1.24
+faiss-cpu>=1.7
+scikit-learn>=1.5.0
+scipy>=1.10
+rank_bm25>=0.2.2
+jieba>=0.42
+fastapi>=0.110
+uvicorn>=0.20
+typer>=0.12
+pypdf>=6.4.0
+pyyaml>=6.0

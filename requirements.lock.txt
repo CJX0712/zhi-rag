@@ -12,7 +12,9 @@ fastapi==0.141.1
 uvicorn==0.54.0
 typer==0.27.2
 pypdf==6.19.0
-langchain-text-splitters==1.1.2
-langchain-core==1.6.5
 pyyaml==6.0.3
 pytest==9.1.1
+
+# NOTE: langchain-* are NO LONGER a core runtime dependency. The splitter now ships
+# a built-in pure-Python implementation (zhi/splitter/splitter.py) and uses
+# langchain only as an optional drop-in upgrade (see requirements-optional.txt).

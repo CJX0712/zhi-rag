@@ -17,3 +17,8 @@ openai                     # OpenAI-compatible API
 # SOTA evaluation
 ragas
 datasets
+
+# Optional: higher-quality text splitter (built-in pure-Python splitter is used
+# by default when this is not installed).
+langchain-text-splitters
+langchain-core
