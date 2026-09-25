@@ -1,0 +1,29 @@
+{
+  "qa_pairs": [
+    {
+      "question": "什么是检索增强生成 RAG？它解决了什么问题？",
+      "relevant_sources": ["data/docs/rag.txt"],
+      "reference": "RAG 结合检索与生成，缓解幻觉与知识时效性问题。"
+    },
+    {
+      "question": "RAG 系统通常由哪些模块组成？",
+      "relevant_sources": ["data/docs/rag.txt"],
+      "reference": "加载切分、嵌入、向量库、检索器、生成器。"
+    },
+    {
+      "question": "Transformer 的自注意力机制如何工作？",
+      "relevant_sources": ["data/docs/transformer.txt"],
+      "reference": "Query/Key/Value 点积归一化得到注意力权重再加权求和。"
+    },
+    {
+      "question": "Transformer 相比 RNN 有什么优势？",
+      "relevant_sources": ["data/docs/transformer.txt"],
+      "reference": "可并行计算、擅长长距离依赖、训练效率更高。"
+    },
+    {
+      "question": "多模态学习如何融合文本与图像？",
+      "relevant_sources": ["data/docs/multimodal.txt"],
+      "reference": "CLIP 将图文映射到共享嵌入空间，实现跨模态检索。"
+    }
+  ]
+}

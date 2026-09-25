@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zhida-rag"
+version = "1.0.0"
+description = "Multimodal Retrieval-Augmented Generation engine: hybrid retrieval (BM25+dense+RRF), pluggable LLM, offline-default."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "晨星" }]
+keywords = ["rag", "multimodal", "retrieval-augmented-generation", "embeddings", "vector-search"]
+dependencies = [
+    "numpy",
+    "faiss-cpu",
+    "scikit-learn",
+    "scipy",
+    "rank_bm25",
+    "jieba",
+    "fastapi",
+    "uvicorn",
+    "typer",
+    "pypdf",
+    "langchain-text-splitters",
+    "langchain-core",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# Optional SOTA / pluggable backends (not required for the default offline demo).
+sota = [
+    "sentence-transformers",
+    "torch",
+    "transformers",
+    "Pillow",
+    "ragas",
+    "datasets",
+    "ollama",
+    "openai",
+]
+
+[project.scripts]
+zhi = "zhi.api.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["zhi*"]

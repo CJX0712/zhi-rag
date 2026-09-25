@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Runtime / index artifacts
+.zhi_index/
+.zhi_index_example/
+zhi_baseline_*/
+zhi_dense_*/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Secrets
+*.env

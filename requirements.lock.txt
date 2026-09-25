@@ -1,0 +1,18 @@
+# ZhiDa — locked core dependencies (offline-default runtime + tests).
+# These are the ONLY packages required for the zero-model-download demo, all
+# unit tests, the REST/CLI service, and the built-in evaluation.
+# Verify on Python 3.13 (wheels confirmed available on win/linux).
+numpy==2.5.3
+faiss-cpu==1.15.1
+scikit-learn==1.9.1
+scipy==1.18.1
+rank_bm25==0.2.2
+jieba==0.42.1
+fastapi==0.141.1
+uvicorn==0.54.0
+typer==0.27.2
+pypdf==6.19.0
+langchain-text-splitters==1.1.2
+langchain-core==1.6.5
+pyyaml==6.0.3
+pytest==9.1.1

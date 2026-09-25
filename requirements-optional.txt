@@ -1,0 +1,19 @@
+# Optional SOTA / pluggable backends. NOT required for the default offline demo.
+# Install only when you want: real dense/CLIP embeddings, LLM generation, or
+# ragas-based evaluation. Each is guarded by a lazy import and degrades safely.
+
+# Dense embeddings + CLIP multimodal (sentence-transformers)
+sentence-transformers==6.1.0
+torch==2.14.0
+transformers==5.17.0
+huggingface-hub==1.33.0
+tokenizers==0.23.2
+Pillow                      # image loading for CLIP image vectors
+
+# LLM generation backends
+ollama                      # local LLM via Ollama
+openai                     # OpenAI-compatible API
+
+# SOTA evaluation
+ragas
+datasets
