@@ -45,9 +45,13 @@ def ask(
 
 
 @app.command()
-def serve(host: str = typer.Option("127.0.0.1", "--host"), port: int = typer.Option(8000, "--port")):
+def serve(host: str = typer.Option("0.0.0.0", "--host"), port: int = typer.Option(8000, "--port")):
+    import os
     import uvicorn
 
+    # Deployment contract: bind 0.0.0.0 and honor the injected PORT env var.
+    host = os.environ.get("HOST", host)
+    port = int(os.environ.get("PORT", port))
     typer.echo(f"serving on http://{host}:{port}")
     uvicorn.run("zhi.api.server:app", host=host, port=port, reload=False)
 

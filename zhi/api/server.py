@@ -1,4 +1,7 @@
 """FastAPI REST service for ZhiDa."""
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -6,7 +9,6 @@ from ..config import ZhiConfig
 from ..errors import ZDError
 from ..pipeline.pipeline import ZhiPipeline
 
-app = FastAPI(title="ZhiDa Multimodal RAG API", version="1.0.0")
 _pipe = None
 
 
@@ -15,6 +17,23 @@ def pipe() -> ZhiPipeline:
     if _pipe is None:
         _pipe = ZhiPipeline(ZhiConfig())
     return _pipe
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Auto-ingest the bundled sample corpus so /query works out of the box on a
+    # fresh deploy (no model download; default LSI embedder + Mock generator).
+    try:
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        data_dir = os.path.join(root, "data")
+        if os.path.isdir(data_dir) and (pipe().retriever is None or len(pipe().retriever.chunks) == 0):
+            pipe().ingest([data_dir])
+    except Exception:
+        pass  # demo still works after a manual POST /ingest
+    yield
+
+
+app = FastAPI(title="ZhiDa Multimodal RAG API", version="1.0.0", lifespan=lifespan)
 
 
 class IngestReq(BaseModel):
